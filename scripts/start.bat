@@ -16,7 +16,7 @@ if errorlevel 1 (
 )
 
 echo [1/2] Starting Backend FastAPI on http://localhost:8000 ...
-start "Sentinel-Backend" cmd /k "cd /d "%~dp0\.." && set PYTHONPATH=. && backend\venv\Scripts\uvicorn backend.app.main:app --host 127.0.0.1 --port 8000"
+start "Sentinel-Backend" cmd /k "cd /d "%~dp0\.." && set PYTHONPATH=. && backend\venv\Scripts\uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 echo [2/2] Starting Frontend Vite on http://localhost:5173 ...
 start "Sentinel-Frontend" cmd /k "cd /d "%~dp0\..\frontend" && npm run dev"

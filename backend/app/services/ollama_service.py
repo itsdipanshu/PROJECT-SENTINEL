@@ -3,7 +3,7 @@ import shutil
 import logging
 import time
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from backend.app.services.ai_prompts import SENTINEL_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -135,11 +135,13 @@ def query_ollama_chat(
     prompt: str,
     history: List[Dict[str, str]] = None,
     model_name: str = "gemma4:e4b",
-    timeout_seconds: int = 120
+    timeout_seconds: Optional[int] = None
 ) -> Dict[str, Any]:
     """
     Execute chat conversation against local Ollama model via safe subprocess stdin pipe.
     Constructs full prompt including system instructions and recent conversation turns.
+    No time limit enforced (runs until generation completes).
+    Keeps model warm in VRAM for instant subsequent responses.
     """
     if not is_ollama_installed():
         return {
@@ -154,8 +156,9 @@ def query_ollama_chat(
     if model_name not in available_models and available_models:
         model_name = available_models[0]
 
-    # Build context prompt
-    conversation_text = f"{SENTINEL_SYSTEM_PROMPT}\n\n"
+    # Build context prompt with speed & directness directive
+    speed_directive = "DIRECT ACTION DIRECTIVE: Answer directly and promptly with operational clarity. Do not output internal thinking monologue or reasoning scratchpad.\n\n"
+    conversation_text = f"{speed_directive}{SENTINEL_SYSTEM_PROMPT}\n\n"
     if history:
         # Keep last 6 exchanges to avoid overflowing context window
         recent_history = history[-6:]
@@ -167,13 +170,14 @@ def query_ollama_chat(
 
     start_time = time.time()
     try:
+        # --keepalive 24h ensures weights remain in GPU VRAM without cold reloading
         proc = subprocess.run(
-            ["ollama", "run", model_name],
+            ["ollama", "run", model_name, "--keepalive", "24h"],
             input=conversation_text,
             capture_output=True,
             text=True,
             encoding="utf-8",
-            timeout=timeout_seconds
+            timeout=timeout_seconds  # None means no timeout limit
         )
         elapsed = round(time.time() - start_time, 2)
 

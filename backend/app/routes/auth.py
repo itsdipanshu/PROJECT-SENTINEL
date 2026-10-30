@@ -3,6 +3,7 @@ import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel, Field
 
 from backend.app.database.session import get_db
@@ -69,10 +70,12 @@ def get_current_user_from_token(authorization: Optional[str] = Header(None), db:
 @router.post("/login")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticate local user and issue JWT session token."""
+    username_input = req.username.strip()
     user = db.query(User).filter(
-        (User.username == req.username) | (User.email == req.username)
+        (func.lower(User.username) == func.lower(username_input)) |
+        (func.lower(User.email) == func.lower(username_input))
     ).first()
-    if not user or not verify_password(req.password, user.hashed_password):
+    if not user or not verify_password(req.password.strip(), user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
@@ -246,6 +249,12 @@ def update_user_status(user_id: int, req: UserStatusUpdate, db: Session = Depend
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if user.email and user.email.lower() == "dipanshu@gmail.com" and not req.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot deactivate root Super Administrator (Dipanshu@gmail.com)"
+        )
+
     user.is_active = req.is_active
     user.updated_at = datetime.datetime.now(datetime.UTC)
 
@@ -274,6 +283,12 @@ def update_user_role(user_id: int, req: UserRoleUpdate, db: Session = Depends(ge
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if user.email and user.email.lower() == "dipanshu@gmail.com" and req.role != "Super Administrator":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot alter role for root Super Administrator (Dipanshu@gmail.com)"
+        )
 
     old_role = user.role
     user.role = req.role

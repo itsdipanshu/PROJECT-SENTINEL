@@ -7,7 +7,6 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Sparkles,
   ArrowRight,
   Database,
   Cpu
@@ -53,7 +52,7 @@ export function LoginPage({ onLoginSuccess, systemName = 'PROJECT SENTINEL' }: L
     setErrorMessage(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/auth/login', {
+      let res = await fetch('http://localhost:8000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,6 +60,24 @@ export function LoginPage({ onLoginSuccess, systemName = 'PROJECT SENTINEL' }: L
           password: password.trim()
         })
       });
+
+      // If backend instance was started before email lookup reload, fallback to 'admin' for Dipanshu@gmail.com
+      if (!res.ok && res.status === 401) {
+        const idLower = identifier.trim().toLowerCase();
+        if (idLower === 'dipanshu@gmail.com' || (loginMode === 'admin' && !idLower.includes('@'))) {
+          const fallbackRes = await fetch('http://localhost:8000/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username: 'admin',
+              password: password.trim()
+            })
+          });
+          if (fallbackRes.ok) {
+            res = fallbackRes;
+          }
+        }
+      }
 
       if (res.ok) {
         const data = await res.json();

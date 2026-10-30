@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sidebar, type NavItem } from './components/Sidebar';
 import { Header, type CurrentUser } from './components/Header';
+import { LoginPage, type AuthUser } from './modules/LoginPage';
 import { AIAssistant } from './modules/AIAssistant';
 import { CommandCenter } from './modules/CommandCenter';
 import { RiskIntelligence } from './modules/RiskIntelligence';
@@ -36,11 +37,30 @@ export function App() {
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [activeAlertsCount, setActiveAlertsCount] = useState<number>(0);
 
-  // Active User session state
-  const [currentUser, setCurrentUser] = useState<CurrentUser>({
-    username: 'admin',
-    full_name: 'Admin Commander',
-    role: 'Super Administrator'
+  // Authentication State
+  const [authenticatedUser, setAuthenticatedUser] = useState<AuthUser | null>(() => {
+    try {
+      const stored = localStorage.getItem('sentinel_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Current User profile for simulation/display
+  const [currentUser, setCurrentUser] = useState<CurrentUser>(() => {
+    if (authenticatedUser) {
+      return {
+        username: authenticatedUser.username,
+        full_name: authenticatedUser.full_name,
+        role: authenticatedUser.role
+      };
+    }
+    return {
+      username: 'admin',
+      full_name: 'Admin Commander',
+      role: 'Super Administrator'
+    };
   });
 
   // AI Assistant auto-prompt pass-through
@@ -51,6 +71,22 @@ export function App() {
     setAiInitialPrompt(prompt);
     setAiAutoSend(autoSend);
     setCurrentNav('ai-assistant');
+  };
+
+  const handleLoginSuccess = (user: AuthUser, _token: string) => {
+    setAuthenticatedUser(user);
+    setCurrentUser({
+      username: user.username,
+      full_name: user.full_name,
+      role: user.role
+    });
+    setCurrentNav('command-center');
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('sentinel_user');
+    localStorage.removeItem('sentinel_auth_token');
+    setAuthenticatedUser(null);
   };
 
   const fetchHealth = async () => {
@@ -82,6 +118,27 @@ export function App() {
     const interval = setInterval(fetchHealth, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Update currentUser when authenticatedUser changes
+  useEffect(() => {
+    if (authenticatedUser) {
+      setCurrentUser({
+        username: authenticatedUser.username,
+        full_name: authenticatedUser.full_name,
+        role: authenticatedUser.role
+      });
+    }
+  }, [authenticatedUser]);
+
+  // If user is not signed in, show the standalone Login Gateway
+  if (!authenticatedUser) {
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        systemName="PROJECT SENTINEL"
+      />
+    );
+  }
 
   const getPageTitle = (nav: NavItem): string => {
     switch (nav) {
@@ -141,6 +198,7 @@ export function App() {
           onNavigate={setCurrentNav}
           currentUser={currentUser}
           onSwitchUser={setCurrentUser}
+          onSignOut={handleSignOut}
         />
 
         {/* Content Container */}
@@ -181,6 +239,7 @@ export function App() {
             />
           ) : currentNav === 'settings' ? (
             <Administration
+              currentUser={authenticatedUser || currentUser}
               onNavigateToAI={handleNavigateToAI}
             />
           ) : currentNav === 'data-management' ? (

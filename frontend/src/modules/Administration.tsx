@@ -49,9 +49,15 @@ interface SettingItem {
 interface Props {
   initialTab?: AdminTab;
   onNavigateToAI?: () => void;
+  currentUser?: {
+    username?: string;
+    email?: string;
+    full_name?: string;
+    role?: string;
+  };
 }
 
-export function Administration({ initialTab = 'users' }: Props) {
+export function Administration({ initialTab = 'users', currentUser }: Props) {
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
   const [users, setUsers] = useState<UserItem[]>([]);
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
@@ -59,8 +65,11 @@ export function Administration({ initialTab = 'users' }: Props) {
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  // Super Administrator is Dipanshu@gmail.com
+  const isSuperAdmin = currentUser?.role === 'Super Administrator' || currentUser?.email?.toLowerCase() === 'dipanshu@gmail.com';
+
   // Active current user state (for session simulation)
-  const [currentRole, setCurrentRole] = useState<string>('Super Administrator');
+  const [currentRole, setCurrentRole] = useState<string>(currentUser?.role || 'Super Administrator');
 
   // Modal states
   const [showAddUserModal, setShowAddUserModal] = useState<boolean>(false);
@@ -345,14 +354,34 @@ export function Administration({ initialTab = 'users' }: Props) {
           </div>
 
           {/* User Table Header & Add Button */}
+          {!isSuperAdmin && (
+            <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-amber-300 text-xs font-mono flex items-center gap-2">
+              <Shield className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Access Restricted:</strong> Only <strong>Admin Commander (Super Administrator — Dipanshu@gmail.com)</strong> has authority to create users, assign roles, and modify account status.
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Shield className="w-4 h-4 text-cyan-400" />
-              Registered Incident Response Personnel
-            </h2>
+            <div>
+              <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Shield className="w-4 h-4 text-cyan-400" />
+                Registered Incident Response Personnel
+              </h2>
+              <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                Access governance managed exclusively by Admin Commander (Dipanshu@gmail.com)
+              </p>
+            </div>
             <button
               onClick={() => setShowAddUserModal(true)}
-              className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition shadow"
+              disabled={!isSuperAdmin}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition shadow ${
+                isSuperAdmin
+                  ? 'bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+              }`}
+              title={isSuperAdmin ? 'Add new user account' : 'Only Admin Commander (Dipanshu@gmail.com) can add users'}
             >
               <UserPlus className="w-3.5 h-3.5" />
               Add User Account
@@ -373,68 +402,94 @@ export function Administration({ initialTab = 'users' }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1f2d42]">
-                  {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/40 transition">
-                      <td className="p-3">
-                        <div className="font-sans font-semibold text-slate-100">{u.full_name}</div>
-                        <div className="text-[11px] text-cyan-400">@{u.username} • {u.email}</div>
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            roleColors[u.role] || 'bg-slate-800 text-slate-300 border-slate-700'
-                          }`}
-                        >
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            u.is_active
-                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                              : 'bg-rose-950/80 text-rose-300 border-rose-800'
-                          }`}
-                        >
-                          {u.is_active ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                              Active
-                            </>
+                  {users.map((u) => {
+                    const isRootSuperAdmin = u.email?.toLowerCase() === 'dipanshu@gmail.com';
+                    return (
+                      <tr key={u.id} className={`hover:bg-slate-800/40 transition ${isRootSuperAdmin ? 'bg-cyan-950/20' : ''}`}>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-sans font-semibold text-slate-100">{u.full_name}</span>
+                            {isRootSuperAdmin && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-bold bg-cyan-900/80 text-cyan-200 border border-cyan-500/50 rounded">
+                                ROOT COMMANDER
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-cyan-400">@{u.username} • {u.email}</div>
+                        </td>
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              roleColors[u.role] || 'bg-slate-800 text-slate-300 border-slate-700'
+                            }`}
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              u.is_active
+                                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                                : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                            }`}
+                          >
+                            {u.is_active ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 text-rose-400" />
+                                Disabled
+                              </>
+                            )}
+                          </span>
+                        </td>
+                        <td className="p-3 text-slate-400">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="p-3 text-right space-x-2">
+                          {isRootSuperAdmin ? (
+                            <span className="text-[10px] text-cyan-400/80 italic font-mono">Master Administrator</span>
                           ) : (
                             <>
-                              <XCircle className="w-3 h-3 text-rose-400" />
-                              Disabled
+                              <button
+                                onClick={() => {
+                                  setShowRoleModal(u);
+                                  setNewRoleValue(u.role);
+                                }}
+                                disabled={!isSuperAdmin}
+                                className={`px-2.5 py-1 rounded border transition ${
+                                  isSuperAdmin
+                                    ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 cursor-pointer'
+                                    : 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                                }`}
+                                title={isSuperAdmin ? 'Change user role' : 'Only Admin Commander (Dipanshu@gmail.com) can change roles'}
+                              >
+                                Change Role
+                              </button>
+                              <button
+                                onClick={() => handleToggleStatus(u)}
+                                disabled={!isSuperAdmin}
+                                className={`px-2.5 py-1 rounded border transition ${
+                                  !isSuperAdmin
+                                    ? 'bg-slate-900 text-slate-600 border-slate-800 cursor-not-allowed'
+                                    : u.is_active
+                                      ? 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border-rose-800 cursor-pointer'
+                                      : 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border-emerald-800 cursor-pointer'
+                                }`}
+                                title={isSuperAdmin ? 'Toggle account status' : 'Only Admin Commander (Dipanshu@gmail.com) can toggle status'}
+                              >
+                                {u.is_active ? 'Disable' : 'Enable'}
+                              </button>
                             </>
                           )}
-                        </span>
-                      </td>
-                      <td className="p-3 text-slate-400">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        <button
-                          onClick={() => {
-                            setShowRoleModal(u);
-                            setNewRoleValue(u.role);
-                          }}
-                          className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded border border-slate-700 transition"
-                        >
-                          Change Role
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(u)}
-                          className={`px-2.5 py-1 rounded border transition ${
-                            u.is_active
-                              ? 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border-rose-800'
-                              : 'bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border-emerald-800'
-                          }`}
-                        >
-                          {u.is_active ? 'Disable' : 'Enable'}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

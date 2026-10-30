@@ -380,10 +380,21 @@ export const Header: React.FC<HeaderProps> = ({
                       setIsLocked(true);
                       setShowUserMenu(false);
                     }}
-                    className="w-full px-3 py-1.5 text-left text-xs font-mono text-rose-300 hover:bg-rose-950/40 rounded flex items-center gap-2 transition"
+                    className="w-full px-3 py-1.5 text-left text-xs font-mono text-amber-300 hover:bg-amber-950/40 rounded flex items-center gap-2 transition"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Lock EOC Console Session</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onSignOut?.();
+                    }}
+                    className="w-full px-3 py-1.5 text-left text-xs font-mono text-rose-300 hover:bg-rose-950/40 rounded flex items-center gap-2 transition border-t border-[#1f2d42]/60 pt-2"
                   >
                     <LogOut className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Lock EOC Console Session</span>
+                    <span>Sign Out to Login Screen</span>
                   </button>
                 </div>
               </div>
