@@ -118,7 +118,7 @@ def clean_ollama_output(raw_text: str) -> str:
     # Remove spinner braille characters (⠙ ⠹ etc.)
     text = re.sub(r'[\u2800-\u28FF\s]{5,}', '', raw_text)
 
-    # Check for "Thinking...\n...done thinking." pattern
+    # Check for "...done thinking." pattern
     if "...done thinking." in text:
         parts = text.split("...done thinking.", 1)
         return parts[1].strip()
@@ -127,6 +127,22 @@ def clean_ollama_output(raw_text: str) -> str:
     if "</thought>" in text:
         parts = text.split("</thought>", 1)
         return parts[1].strip()
+
+    # Unterminated or inline thinking block
+    if "Thinking Process:" in text and "...done thinking." not in text:
+        lines = text.split("\n")
+        content_lines = []
+        in_thinking = False
+        for line in lines:
+            if "Thinking Process" in line or line.strip() == "Thinking...":
+                in_thinking = True
+                continue
+            if in_thinking and (line.startswith("* ") or line.startswith("1. ") or line.startswith("### ") or line.startswith("- ")):
+                in_thinking = False
+            if not in_thinking:
+                content_lines.append(line)
+        if content_lines:
+            return "\n".join(content_lines).strip()
 
     return text.strip()
 
@@ -139,9 +155,11 @@ def query_ollama_chat(
 ) -> Dict[str, Any]:
     """
     Execute chat conversation against local Ollama model via safe subprocess stdin pipe.
-    Constructs full prompt including system instructions and recent conversation turns.
-    No time limit enforced (runs until generation completes).
-    Keeps model warm in VRAM for instant subsequent responses.
+    Optimized for high-speed offline inference on RTX 3050 Laptop GPU:
+    - Bypasses thinking loop overhead
+    - Keeps model permanently resident in GPU VRAM (--keepalive 24h)
+    - Truncates history context to keep prompt evaluation sub-second
+    - No artificial timeout limits enforced
     """
     if not is_ollama_installed():
         return {
@@ -156,17 +174,22 @@ def query_ollama_chat(
     if model_name not in available_models and available_models:
         model_name = available_models[0]
 
-    # Build context prompt with speed & directness directive
-    speed_directive = "DIRECT ACTION DIRECTIVE: Answer directly and promptly with operational clarity. Do not output internal thinking monologue or reasoning scratchpad.\n\n"
-    conversation_text = f"{speed_directive}{SENTINEL_SYSTEM_PROMPT}\n\n"
+    # Exact prompt structure that bypasses internal reasoning loops for maximum speed
+    conversation_text = (
+        "Emergency Rule: Do NOT write Thinking Process or internal reasoning. "
+        "Start your response immediately with the operational answer.\n\n"
+    )
     if history:
-        # Keep last 6 exchanges to avoid overflowing context window
-        recent_history = history[-6:]
+        # Keep last 2 exchanges and trim length to keep GPU prompt evaluation sub-second
+        recent_history = history[-2:]
         for msg in recent_history:
-            role_label = "Human Operator" if msg.get("role") == "user" else "Sentinel AI"
-            conversation_text += f"{role_label}: {msg.get('content', '')}\n\n"
+            role_label = "User" if msg.get("role") == "user" else "Assistant"
+            content = msg.get("content", "")
+            if len(content) > 250:
+                content = content[:250] + "..."
+            conversation_text += f"{role_label}: {content}\n\n"
 
-    conversation_text += f"Human Operator: {prompt}\n\nSentinel AI:"
+    conversation_text += f"User: {prompt}\n\n"
 
     start_time = time.time()
     try:

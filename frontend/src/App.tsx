@@ -63,9 +63,12 @@ export function App() {
     };
   });
 
-  // AI Assistant auto-prompt pass-through
+  // AI Assistant auto-prompt pass-through & background execution tracking
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
   const [aiAutoSend, setAiAutoSend] = useState<boolean>(false);
+  const [isAIGenerating, setIsAIGenerating] = useState<boolean>(false);
+  const [aiGenerationSeconds, setAIGenerationSeconds] = useState<number>(0);
+  const [aiGenerationTitle, setAIGenerationTitle] = useState<string>('');
 
   const handleNavigateToAI = (prompt?: string, autoSend: boolean = false) => {
     setAiInitialPrompt(prompt);
@@ -199,12 +202,16 @@ export function App() {
           currentUser={currentUser}
           onSwitchUser={setCurrentUser}
           onSignOut={handleSignOut}
+          isAIGenerating={isAIGenerating}
+          aiGenerationSeconds={aiGenerationSeconds}
+          aiGenerationTitle={aiGenerationTitle}
+          onOpenAI={() => setCurrentNav('ai-assistant')}
         />
 
         {/* Content Container */}
         <main className="flex-1 pt-20 p-8 space-y-6">
-          {/* Conditional Module Rendering */}
-          {currentNav === 'ai-assistant' ? (
+          {/* Persistent AI Assistant: ALWAYS mounted in background so tasks and network requests never abort */}
+          <div className={currentNav === 'ai-assistant' ? 'block' : 'hidden'}>
             <AIAssistant
               initialPrompt={aiInitialPrompt}
               autoSend={aiAutoSend}
@@ -212,8 +219,16 @@ export function App() {
                 setAiInitialPrompt(undefined);
                 setAiAutoSend(false);
               }}
+              onGenerationChange={(generating, seconds, title) => {
+                setIsAIGenerating(generating);
+                setAIGenerationSeconds(seconds);
+                if (title) setAIGenerationTitle(title);
+              }}
             />
-          ) : currentNav === 'command-center' ? (
+          </div>
+
+          {/* Other Operations Modules (Rendered when active) */}
+          {currentNav === 'command-center' ? (
             <CommandCenter
               onNavigateToAI={handleNavigateToAI}
               onNavigateToIncidents={() => setCurrentNav('incidents')}
@@ -246,7 +261,7 @@ export function App() {
             <DataManagement
               onNavigateToAI={handleNavigateToAI}
             />
-          ) : (
+          ) : currentNav !== 'ai-assistant' ? (
             <div className="bg-[#111827] border border-[#1f2d42] rounded-xl p-8 text-center space-y-4 shadow-xl">
               <div className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mx-auto flex items-center justify-center">
                 <Activity className="w-6 h-6 animate-pulse" />
@@ -264,7 +279,7 @@ export function App() {
                 Back to Command Center
               </button>
             </div>
-          )}
+          ) : null}
         </main>
       </div>
     </div>

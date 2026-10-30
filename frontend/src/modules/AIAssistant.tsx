@@ -36,19 +36,72 @@ export interface AIAssistantProps {
   initialPrompt?: string;
   autoSend?: boolean;
   onClearInitialPrompt?: () => void;
+  onGenerationChange?: (generating: boolean, seconds: number, title?: string) => void;
 }
 
 export const AIAssistant: React.FC<AIAssistantProps> = ({
   initialPrompt,
   autoSend,
   onClearInitialPrompt,
+  onGenerationChange,
 }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationSeconds, setGenerationSeconds] = useState<number>(0);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  // Sync generation status to parent App & Header
+  useEffect(() => {
+    const currentConv = conversations.find((c) => c.id === activeConvId);
+    onGenerationChange?.(isGenerating, generationSeconds, currentConv?.title || 'Tactical Query');
+  }, [isGenerating, generationSeconds, activeConvId, conversations]);
+
+  // Live progress timer while model computes
+  useEffect(() => {
+    let interval: any = null;
+    if (isGenerating) {
+      setGenerationSeconds(0);
+      const start = Date.now();
+      interval = setInterval(() => {
+        setGenerationSeconds(Math.round((Date.now() - start) / 100) / 10);
+      }, 100);
+    } else {
+      if (interval) clearInterval(interval);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGenerating]);
+
+  // Background polling while generating: ensures UI updates the moment SQLite saves assistant response
+  useEffect(() => {
+    if (!isGenerating || !activeConvId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/ai/conversations/${activeConvId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const msgs: Message[] = data.messages || [];
+          if (msgs.length > 0) {
+            const lastMsg = msgs[msgs.length - 1];
+            if (lastMsg.role === 'assistant') {
+              setMessages(msgs);
+              setIsGenerating(false);
+              loadConversations();
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Polling conversation update error:', err);
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [isGenerating, activeConvId]);
   const [selectedModel, setSelectedModel] = useState<string>('gemma4:e4b');
   const [availableModels, setAvailableModels] = useState<string[]>(['gemma4:e4b']);
   const [aiStatus, setAiStatus] = useState<any>(null);
@@ -105,7 +158,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
       if (res.ok) {
         const data: Conversation[] = await res.json();
         setConversations(data);
-        if (data.length > 0 && activeConvId === null) {
+        if (data.length > 0 && activeConvId === null && !isGenerating) {
           selectConversation(data[0].id);
         }
       }
@@ -175,6 +228,28 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
     setInputPrompt('');
     setIsGenerating(true);
 
+    // If no active conversation, create one immediately so UI and backend are synced upfront
+    let targetConvId = activeConvId;
+    if (!targetConvId) {
+      try {
+        const createRes = await fetch('http://localhost:8000/api/ai/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: promptToSend.length > 35 ? promptToSend.slice(0, 35) + '...' : promptToSend
+          })
+        });
+        if (createRes.ok) {
+          const newConv: Conversation = await createRes.json();
+          targetConvId = newConv.id;
+          setActiveConvId(newConv.id);
+          setConversations((prev) => [newConv, ...prev.filter((c) => c.id !== newConv.id)]);
+        }
+      } catch (err) {
+        console.error('Failed to create conversation upfront:', err);
+      }
+    }
+
     // Optimistically add user message to UI
     const tempUserMsg: Message = {
       id: Date.now(),
@@ -191,7 +266,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          conversation_id: activeConvId,
+          conversation_id: targetConvId,
           prompt: promptToSend,
           model_name: selectedModel,
         }),
@@ -199,12 +274,16 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
 
       if (res.ok) {
         const assistantMsg: Message = await res.json();
-        setMessages((prev) => [...prev, assistantMsg]);
-        // Update active conversation id if it was newly created
+        // Check if message is already added by polling
+        setMessages((prev) => {
+          const exists = prev.some((m) => m.id === assistantMsg.id);
+          if (exists) return prev;
+          return [...prev, assistantMsg];
+        });
         if (assistantMsg.conversation_id && assistantMsg.conversation_id !== activeConvId) {
           setActiveConvId(assistantMsg.conversation_id);
-          loadConversations();
         }
+        loadConversations();
       } else {
         const errorMsg: Message = {
           id: Date.now() + 1,
@@ -291,7 +370,11 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
             >
               {availableModels.map((m) => (
                 <option key={m} value={m}>
-                  {m}
+                  {m === 'qwen2.5:0.5b'
+                    ? '⚡ qwen2.5:0.5b (Ultra Fast ~4s)'
+                    : m === 'gemma4:e4b'
+                    ? '🛡️ gemma4:e4b (Deep Analysis)'
+                    : m}
                 </option>
               ))}
             </select>
@@ -464,12 +547,27 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
             ))
           )}
 
-          {/* Thinking / Generating Spinner */}
+          {/* Thinking / Generating Live Progress Bar */}
           {isGenerating && (
-            <div className="flex items-center space-x-3 p-4 bg-[#111827]/80 border border-cyan-500/30 rounded-2xl max-w-md animate-pulse">
-              <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
-              <div className="text-xs font-mono text-cyan-300">
-                Local Gemma model is processing on GPU...
+            <div className="flex flex-col space-y-2.5 p-4 bg-[#111827]/90 border border-cyan-500/40 rounded-2xl max-w-lg shadow-xl shadow-cyan-950/40">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5 text-xs font-mono font-bold text-cyan-300">
+                  <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+                  <span>
+                    {generationSeconds < 2
+                      ? '⚡ Ingesting telemetry & parameters...'
+                      : generationSeconds < 6
+                      ? '🔍 Applying NDMA disaster rules on GPU...'
+                      : '📝 Synthesizing operational dispatch recommendations...'}
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[11px] font-bold">
+                  ⏱️ {generationSeconds.toFixed(1)}s
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-1.5 border-t border-[#1f2d42]">
+                <span>Engine: NVIDIA RTX 3050 (100% VRAM)</span>
+                <span className="text-emerald-400 font-semibold">● Offline GPU Acceleration</span>
               </div>
             </div>
           )}

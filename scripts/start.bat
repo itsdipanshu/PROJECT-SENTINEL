@@ -13,6 +13,8 @@ if errorlevel 1 (
     echo Sentinel AI assistant will activate when Ollama is running.
 ) else (
     echo [OK] Ollama is running locally.
+    echo Pre-warming Gemma model into RTX 3050 GPU VRAM...
+    start /b "" ollama run gemma4:e4b --keepalive 24h "Sentinel ready" >nul 2>&1
 )
 
 echo [1/2] Starting Backend FastAPI on http://localhost:8000 ...

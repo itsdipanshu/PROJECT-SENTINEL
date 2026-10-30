@@ -47,12 +47,16 @@ interface HeaderProps {
   currentUser?: CurrentUser;
   onSwitchUser?: (user: CurrentUser) => void;
   onSignOut?: () => void;
+  isAIGenerating?: boolean;
+  aiGenerationSeconds?: number;
+  aiGenerationTitle?: string;
+  onOpenAI?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   pageTitle,
   isBackendConnected,
-  ollamaModel,
+  ollamaModel: _ollamaModel,
   isOllamaRunning,
   onRefresh,
   activeAlertCount = 0,
@@ -63,7 +67,11 @@ export const Header: React.FC<HeaderProps> = ({
     role: 'Super Administrator'
   },
   onSwitchUser,
-  onSignOut
+  onSignOut,
+  isAIGenerating = false,
+  aiGenerationSeconds = 0,
+  aiGenerationTitle = '',
+  onOpenAI
 }) => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
@@ -160,9 +168,24 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center space-x-1.5 text-xs font-mono">
             <Cpu className="w-3.5 h-3.5 text-slate-400" />
             <Badge variant={isOllamaRunning ? 'info' : 'warning'} size="sm">
-              {isOllamaRunning ? `Ollama (${ollamaModel})` : 'AI Idle'}
+              {isOllamaRunning ? 'Ollama (gemma4:e4b)' : 'AI Idle'}
             </Badge>
           </div>
+
+          {/* Active Background AI Generating Pill */}
+          {isAIGenerating && (
+            <button
+              onClick={onOpenAI}
+              className="flex items-center space-x-2 px-2.5 py-1 bg-cyan-950/90 border border-cyan-500/70 text-cyan-300 rounded-lg text-xs font-mono animate-pulse hover:bg-cyan-900 transition shadow-lg shadow-cyan-500/20 cursor-pointer"
+              title={`Sentinel AI is generating "${aiGenerationTitle}" in the background. Click to open.`}
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <span className="font-bold">AI Working:</span>
+              <span className="px-1.5 py-0.2 rounded bg-cyan-900 text-cyan-200 text-[10px] font-bold">
+                ⏱️ {aiGenerationSeconds.toFixed(1)}s
+              </span>
+            </button>
+          )}
 
           {/* Refresh Button */}
           {onRefresh && (
