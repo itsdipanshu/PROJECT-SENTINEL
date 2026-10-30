@@ -1,0 +1,8 @@
+Station_ID,River_Name,Basin,Gauge_Location,Current_Water_Level_m,Warning_Level_m,Danger_Level_m,Discharge_Cusecs,Trend
+KG-01,Kosi,Kosi Basin,Birpur Barrage Axis,75.45,73.50,74.70,385000,Rising
+KG-02,Kosi,Kosi Basin,Baltara Railway Bridge,34.80,32.85,33.85,310000,Rising
+KG-03,Kosi,Kosi Basin,Kursela Confluence,31.20,29.50,30.00,290000,Steady
+KG-04,Bagmati,Ganga Basin,Benibad Site,49.60,47.68,48.68,145000,Rising
+KG-05,Kamla Balan,Kosi Sub-Basin,Jhanjharpur Crossing,51.20,49.00,50.00,98000,Rising
+KG-06,Gandak,Gandak Basin,Valmikinagar Headworks,55.10,53.20,54.00,210000,Falling
+

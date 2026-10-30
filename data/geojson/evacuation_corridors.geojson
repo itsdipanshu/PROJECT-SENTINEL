@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "corridor_id": "ROUTE-EVAC-01",
+        "name": "NH-106 High Elevation Evacuation Corridor",
+        "status": "Operational / Suggested",
+        "advisory": "Raised embankment road; clear for heavy transport vehicles.",
+        "color": "#06b6d4"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [87.0142, 26.5218],
+          [87.0180, 26.5250],
+          [87.0080, 26.5120],
+          [86.6020, 26.1240]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "corridor_id": "ROUTE-EVAC-02",
+        "name": "Birpur Village to Secondary Relief Camp Link",
+        "status": "Cautious / Slow Moving",
+        "advisory": "Minor surface waterlogging reported near km 4 marker.",
+        "color": "#f59e0b"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [87.0142, 26.5218],
+          [87.0160, 26.5230],
+          [87.0180, 26.5250]
+        ]
+      }
+    }
+  ]
+}
+

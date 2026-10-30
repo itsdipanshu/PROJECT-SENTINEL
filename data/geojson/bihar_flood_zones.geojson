@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "ZONE-FLOOD-01",
+        "name": "Koshi River Embankment Inundation Zone A",
+        "district": "Supaul",
+        "risk_level": "CRITICAL",
+        "description": "Primary low-lying riverine flood basin vulnerable to Koshi embankment overflow.",
+        "color": "#ef4444",
+        "is_demo": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.98, 26.55],
+            [87.05, 26.54],
+            [87.04, 26.48],
+            [86.96, 26.49],
+            [86.98, 26.55]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "ZONE-FLOOD-02",
+        "name": "Kamla-Balan Basin Waterlogging Zone B",
+        "district": "Madhubani",
+        "risk_level": "HIGH",
+        "description": "Secondary agricultural runoff plain with drainage bottlenecks.",
+        "color": "#f59e0b",
+        "is_demo": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [85.82, 26.62],
+            [85.92, 26.60],
+            [85.90, 26.54],
+            [85.80, 26.56],
+            [85.82, 26.62]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "ZONE-SAFE-01",
+        "name": "Highland Evacuation Ridge & Assembly Area",
+        "district": "Supaul Central",
+        "risk_level": "SAFE",
+        "description": "Elevated ridge zone above 75m MSL suitable for temporary staging and helipad.",
+        "color": "#10b981",
+        "is_demo": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [86.99, 26.45],
+            [87.03, 26.45],
+            [87.03, 26.42],
+            [86.99, 26.42],
+            [86.99, 26.45]
+          ]
+        ]
+      }
+    }
+  ]
+}
+

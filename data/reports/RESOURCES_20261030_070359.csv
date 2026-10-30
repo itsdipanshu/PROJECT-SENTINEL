@@ -1,0 +1,12 @@
+Resource ID,Supply Name,Category,Available,Deployed,Storage Depot
+RES-001,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot
+RES-002,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot
+RES-003,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot
+RES-004,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot
+RES-005,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot
+DEMO-RES-01,[DEMO] Packaged Drinking Water (20L Cans),Drinking water,1800.0 Cans,200.0 Cans,Supaul Central Relief Depot
+DEMO-RES-02,[DEMO] Ready-to-Eat Emergency Food Ration Kits,Food,3400.0 Packets,600.0 Packets,Supaul Central Relief Depot
+DEMO-RES-03,[DEMO] Inflatable Rescue Boats with Outboard Motors,Rescue boats,8.0 Boats,6.0 Boats,NDRF 9th Bn Water Depot
+DEMO-RES-04,[DEMO] High-Capacity Water De-watering Pumps (50 HP),Power generators,5.0 Pumps,5.0 Pumps,Irrigation Dept Warehouse
+DEMO-RES-05,[DEMO] Essential Flood Trauma & Antivenom Medical Kits,Medicines,210.0 Kits,60.0 Kits,District Health Store
+RES-011,Emergency Blankets,Blankets,60.0 Pcs,0.0 Pcs,Central Depot

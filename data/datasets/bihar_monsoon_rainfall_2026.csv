@@ -1,0 +1,12 @@
+District,Station_Code,Date,Rainfall_mm,24h_Accumulation_mm,Historical_Avg_mm,Normal_Deviation_Pct,Risk_Category
+Supaul,SPL-01,2026-10-28,142.5,210.0,45.2,+364.6%,Extreme Heavy
+Supaul,SPL-02,2026-10-28,128.0,195.4,42.0,+365.2%,Extreme Heavy
+Madhubani,MDB-01,2026-10-28,98.4,145.2,38.5,+277.1%,Very Heavy
+Madhubani,MDB-02,2026-10-28,85.0,130.0,36.0,+261.1%,Very Heavy
+Saharsa,SHS-01,2026-10-28,110.2,168.0,40.1,+318.9%,Extreme Heavy
+Saharsa,SHS-02,2026-10-28,92.5,138.2,37.5,+268.5%,Very Heavy
+Darbhanga,DBG-01,2026-10-28,76.0,112.4,35.0,+221.1%,Heavy
+Birpur,BRP-01,2026-10-28,165.0,248.5,48.0,+417.7%,Critical Outburst
+Purnia,PRN-01,2026-10-28,68.2,95.0,39.0,+143.6%,Moderate Heavy
+Patna,PAT-01,2026-10-28,42.0,58.0,32.0,+81.2%,Moderate
+
